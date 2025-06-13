@@ -34,7 +34,7 @@ import {
 	makeNoiseHandler,
 	printQRIfNecessaryListener,
 	promiseTimeout
-} from '../Utils'
+} from "../Utils"
 import {
 	assertNodeErrorFree,
 	BinaryNode,
