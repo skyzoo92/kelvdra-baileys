@@ -41,6 +41,7 @@ const getWebInfo = (config: SocketConfig): proto.ClientPayload.IWebInfo => {
 	return { webSubPlatform }
 }
 
+
 const getClientPayload = (config: SocketConfig) => {
 	const payload: proto.IClientPayload = {
 		connectType: proto.ClientPayload.ConnectType.WIFI_UNKNOWN,
@@ -53,59 +54,46 @@ const getClientPayload = (config: SocketConfig) => {
 	return payload
 }
 
-export const generateMobileNode = (config: SocketConfig): proto.IClientPayload => {
-	if(!config.auth.creds) {
-		throw new Boom('No registration data found', { data: config })
-	}
-
-	const payload: proto.IClientPayload = {
-		...getClientPayload(config),
-		sessionId: Math.floor(Math.random() * 999999999 + 1),
-		shortConnect: true,
-		connectAttemptCount: 0,
-		device: 0,
-		dnsSource: {
-			appCached: false,
-			dnsMethod: proto.ClientPayload.DNSSource.DNSResolutionMethod.SYSTEM,
-		},
-		passive: false, // XMPP heartbeat setting (false: server actively pings) (true: client actively pings)
-		pushName: 'test',
-		username: Number(`${config.auth.creds.registration.phoneNumberCountryCode}${config.auth.creds.registration.phoneNumberNationalNumber}`),
-	}
-	return proto.ClientPayload.fromObject(payload)
-}
 
 export const generateLoginNode = (userJid: string, config: SocketConfig): proto.IClientPayload => {
 	const { user, device } = jidDecode(userJid)!
 	const payload: proto.IClientPayload = {
 		...getClientPayload(config),
-		passive: true,
+		passive: false,
+		pull: true,
 		username: +user,
 		device: device,
 	}
 	return proto.ClientPayload.fromObject(payload)
 }
 
-const getPlatformType = (platform) => {
-    const platformType = platform.toUpperCase()
-    return proto.DeviceProps.PlatformType[platformType] || proto.DeviceProps.PlatformType.DESKTOP
+const getPlatformType = (platform: string): proto.DeviceProps.PlatformType => {
+	const platformType = platform.toUpperCase()
+	return proto.DeviceProps.PlatformType[platformType] || proto.DeviceProps.PlatformType.DESKTOP
 }
 
-const generateRegistrationNode = ({ registrationId, signedPreKey, signedIdentityKey }, config) => {
-    // the app version needs to be md5 hashed
-    // and passed in
-    const appVersionBuf = createHash('md5')
-        .update(config.version.join('.')) // join as string
-        .digest()
-    const companion = {
-        os: config.browser[0],
-        platformType: getPlatformType(config.browser[1]),
-        requireFullSync: config.syncFullHistory,
-    }
+export const generateRegistrationNode = (
+	{ registrationId, signedPreKey, signedIdentityKey }: SignalCreds,
+	config: SocketConfig
+) => {
+	// the app version needs to be md5 hashed
+	// and passed in
+	const appVersionBuf = createHash('md5')
+		.update(config.version.join('.')) // join as string
+		.digest()
+
+	const companion: proto.IDeviceProps = {
+		os: config.browser[0],
+		platformType: getPlatformType(config.browser[1]),
+		requireFullSync: config.syncFullHistory,
+	}
+
 	const companionProto = proto.DeviceProps.encode(companion).finish()
+
 	const registerPayload: proto.IClientPayload = {
 		...getClientPayload(config),
 		passive: false,
+		pull: false,
 		devicePairingData: {
 			buildHash: appVersionBuf,
 			deviceProps: companionProto,
@@ -143,27 +131,27 @@ export const configureSuccessfulPairing = (
 
 	const { details, hmac } = proto.ADVSignedDeviceIdentityHMAC.decode(deviceIdentityNode.content as Buffer)
 	// check HMAC matches
-	const advSign = hmacSign(details, Buffer.from(advSecretKey, 'base64'))
-	if(Buffer.compare(hmac, advSign) !== 0) {
+	const advSign = hmacSign(details!, Buffer.from(advSecretKey, 'base64'))
+	if(Buffer.compare(hmac!, advSign) !== 0) {
 		throw new Boom('Invalid account signature')
 	}
 
-	const account = proto.ADVSignedDeviceIdentity.decode(details)
+	const account = proto.ADVSignedDeviceIdentity.decode(details!)
 	const { accountSignatureKey, accountSignature, details: deviceDetails } = account
 	// verify the device signature matches
-	const accountMsg = Buffer.concat([ Buffer.from([6, 0]), deviceDetails, signedIdentityKey.public ])
-	if(!Curve.verify(accountSignatureKey, accountMsg, accountSignature)) {
+	const accountMsg = Buffer.concat([ Buffer.from([6, 0]), deviceDetails!, signedIdentityKey.public ])
+	if(!Curve.verify(accountSignatureKey!, accountMsg, accountSignature!)) {
 		throw new Boom('Failed to verify account signature')
 	}
 
 	// sign the details with our identity key
-	const deviceMsg = Buffer.concat([ Buffer.from([6, 1]), deviceDetails, signedIdentityKey.public, accountSignatureKey ])
+	const deviceMsg = Buffer.concat([ Buffer.from([6, 1]), deviceDetails!, signedIdentityKey.public, accountSignatureKey! ])
 	account.deviceSignature = Curve.sign(signedIdentityKey.private, deviceMsg)
 
-	const identity = createSignalIdentity(jid, accountSignatureKey)
+	const identity = createSignalIdentity(jid, accountSignatureKey!)
 	const accountEnc = encodeSignedDeviceIdentity(account, false)
 
-	const deviceIdentity = proto.ADVDeviceIdentity.decode(account.details)
+	const deviceIdentity = proto.ADVDeviceIdentity.decode(account.details!)
 
 	const reply: BinaryNode = {
 		tag: 'iq',
@@ -179,7 +167,7 @@ export const configureSuccessfulPairing = (
 				content: [
 					{
 						tag: 'device-identity',
-						attrs: { 'key-index': deviceIdentity.keyIndex.toString() },
+						attrs: { 'key-index': deviceIdentity.keyIndex!.toString() },
 						content: accountEnc
 					}
 				]
