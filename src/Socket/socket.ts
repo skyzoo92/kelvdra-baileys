@@ -29,11 +29,11 @@ import {
 	getCodeFromWSError,
 	getErrorCodeFromStreamError,
 	getNextPreKeysNode,
+	getPlatformId,
 	makeEventBuffer,
 	makeNoiseHandler,
 	printQRIfNecessaryListener,
-	promiseTimeout,
-	getPlatformId
+	promiseTimeout
 } from '../Utils'
 import {
 	assertNodeErrorFree,
@@ -492,10 +492,10 @@ export const makeSocket = (config: SocketConfig) => {
         if (pairKey) {
         authState.creds.pairingCode = pairKey.toUpperCase()
         } else {
-            authState.creds.pairingCode = (0,bytesToCrockford)((0, randomBytes)(5));
+            authState.creds.pairingCode = bytesToCrockford(randomBytes(5));
         }
         authState.creds.me = {
-            id: (0, jidEncode)(phoneNumber, 's.whatsapp.net'),
+            id: jidEncode(phoneNumber, 's.whatsapp.net'),
             name: '~'
         };
         ev.emit('creds.update', authState.creds)
