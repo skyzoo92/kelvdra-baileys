@@ -86,29 +86,23 @@ export const generateLoginNode = (userJid: string, config: SocketConfig): proto.
 	return proto.ClientPayload.fromObject(payload)
 }
 
-const getPlatformType = (platform: string): proto.DeviceProps.PlatformType => {
-	const platformType = platform.toUpperCase()
-	return proto.DeviceProps.PlatformType[platformType] || proto.DeviceProps.PlatformType.DESKTOP
+const getPlatformType = (platform) => {
+    const platformType = platform.toUpperCase()
+    return WAProto_1.proto.DeviceProps.PlatformType[platformType] || WAProto_1.proto.DeviceProps.PlatformType.DESKTOP
 }
 
-export const generateRegistrationNode = (
-	{ registrationId, signedPreKey, signedIdentityKey }: SignalCreds,
-	config: SocketConfig
-) => {
-	// the app version needs to be md5 hashed
-	// and passed in
-	const appVersionBuf = createHash('md5')
-		.update(config.version.join('.')) // join as string
-		.digest()
-
-	const companion: proto.IDeviceProps = {
-		os: config.browser[0],
-		platformType: getPlatformType(config.browser[1]),
-		requireFullSync: config.syncFullHistory,
-	}
-
-	const companionProto = proto.DeviceProps.encode(companion).finish()
-
+const generateRegistrationNode = ({ registrationId, signedPreKey, signedIdentityKey }, config) => {
+    // the app version needs to be md5 hashed
+    // and passed in
+    const appVersionBuf = crypto_1.createHash('md5')
+        .update(config.version.join('.')) // join as string
+        .digest()
+    const companion = {
+        os: config.browser[0],
+        platformType: getPlatformType(config.browser[1]),
+        requireFullSync: config.syncFullHistory,
+    }
+	const companionProto = WAProto_1.proto.DeviceProps.encode(companion).finish()
 	const registerPayload: proto.IClientPayload = {
 		...getClientPayload(config),
 		passive: false,
