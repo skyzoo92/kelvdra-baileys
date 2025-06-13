@@ -552,13 +552,12 @@ export const makeSocket = (config: SocketConfig) => {
     }
     
     async function generatePairingKey() {
-        const salt = randomBytes(32)
-        const randomIv = randomBytes(16)
-        const key = await derivePairingCodeKey(authState.creds.pairingCode, salt)
-        const ciphered = aesEncryptCTR(authState.creds.pairingEphemeralKeyPair.public, key, randomIv)
-        
-        return Buffer.concat([salt, randomIv, ciphered])
-    }
+		const salt = randomBytes(32)
+		const randomIv = randomBytes(16)
+		const key = await derivePairingCodeKey(authState.creds.pairingCode!, salt)
+		const ciphered = aesEncryptCTR(authState.creds.pairingEphemeralKeyPair.public, key, randomIv)
+		return Buffer.concat([salt, randomIv, ciphered])
+	}
 
 	const sendWAMBuffer = (wamBuffer: Buffer) => {
 		return query({
