@@ -88,13 +88,13 @@ export const generateLoginNode = (userJid: string, config: SocketConfig): proto.
 
 const getPlatformType = (platform) => {
     const platformType = platform.toUpperCase()
-    return WAProto_1.proto.DeviceProps.PlatformType[platformType] || WAProto_1.proto.DeviceProps.PlatformType.DESKTOP
+    return proto.DeviceProps.PlatformType[platformType] || proto.DeviceProps.PlatformType.DESKTOP
 }
 
 const generateRegistrationNode = ({ registrationId, signedPreKey, signedIdentityKey }, config) => {
     // the app version needs to be md5 hashed
     // and passed in
-    const appVersionBuf = crypto_1.createHash('md5')
+    const appVersionBuf = createHash('md5')
         .update(config.version.join('.')) // join as string
         .digest()
     const companion = {
@@ -102,7 +102,7 @@ const generateRegistrationNode = ({ registrationId, signedPreKey, signedIdentity
         platformType: getPlatformType(config.browser[1]),
         requireFullSync: config.syncFullHistory,
     }
-	const companionProto = WAProto_1.proto.DeviceProps.encode(companion).finish()
+	const companionProto = proto.DeviceProps.encode(companion).finish()
 	const registerPayload: proto.IClientPayload = {
 		...getClientPayload(config),
 		passive: false,
