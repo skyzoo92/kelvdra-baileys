@@ -495,7 +495,7 @@ export const makeSocket = (config: SocketConfig) => {
             authState.creds.pairingCode = (0,bytesToCrockford)((0, randomBytes)(5));
         }
         authState.creds.me = {
-            id: (0, WABinary_1.jidEncode)(phoneNumber, 's.whatsapp.net'),
+            id: (0, jidEncode)(phoneNumber, 's.whatsapp.net'),
             name: '~'
         };
         ev.emit('creds.update', authState.creds)
@@ -503,7 +503,7 @@ export const makeSocket = (config: SocketConfig) => {
         await sendNode({
             tag: 'iq',
             attrs: {
-                to: WABinary_1.S_WHATSAPP_NET,
+                to: S_WHATSAPP_NET,
                 type: 'set',
                 id: generateMessageTag(),
                 xmlns: 'md'
